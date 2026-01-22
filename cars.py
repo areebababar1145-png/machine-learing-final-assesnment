@@ -1,352 +1,606 @@
-# data acess and understanding 
-
-from json import encoder
 import pandas as pd 
 import numpy as np 
 import seaborn as sns 
 import matplotlib.pyplot as plt
-df=pd.read_csv("cars.csv")
-# checking the the first five rows 
+
+# load data
+df = pd.read_csv("cars.csv")
 print(df.head())
-# checking the last five row 
 print(df.tail())
-# checking the basic  rows and columns info 
-print("\nShape:", df.shape)
-# checking the columns name 
-print("\nColumns:", df.columns)
-# checking the non null values 
-print("\ninfo:",df.info())
-# checking the null values in each columns 
-print("\nNull values:",df.isnull().sum().sort_values(ascending=False))
-# checking the duplicate rows 
-print("\nDuplicated rows:", df.duplicated().sum())
-# TARGET COLUMNS ANALYSIS 
-# show the first 5 body types 
-print("\nBody types:",df["BodyType"].head())
-# showing how many the unique body types exit in this dataset 
-print("Body type nunique:",df["BodyType"].nunique())
-# showing the body types top with how many types it appaer in the dataset 
-print("Body type count values:")
+print("\nshape:", df.shape)
+print("columns:", df.columns)
+df.info()
+print("\nnulls:", df.isnull().sum().sum())
+print("duplicates:", df.duplicated().sum())
+# target variable
+print("\nbody types:")
 print(df["BodyType"].value_counts())
-# statistical analysis 
-print("\nDescribe:",df.describe())
-# renaming columns that have underscores
-df.rename(columns={
-    'Power_kW_HP': 'PowerHP',
-    'EngineCapacity_Corrected': 'EngineCapacityCorr',
-    'APK_month_diff': 'APKmonth'
-}, inplace=True)
-# checking columns after renaming
-print("\nColumns after renaming:",df.columns)
- # DATA CLEANING 
- # removing the duplicate 
+print(df.describe())
+# clean data
+df.rename(columns={'Power_kW_HP':'PowerHP', 'EngineCapacity_Corrected':'EngineCapacityCorr', 'APK_month_diff':'APKmonth'}, inplace=True)
 df = df.drop_duplicates()
-print("duplicates removed New shape of the dataset :", df.shape)
-# dropping the high missing values columns 
-df=df.drop(columns=["FuelConsumption",'PreviousOwners',"APK"])
-print("after dropping high missing value new shape of the data set ",df.shape)
-# apply the mapping on the body type bcz of the fragmented data and fix rare noisy data 
-df["BodyType"] = df["BodyType"].replace ({
-    "SUV/Off-Road/Pick-Up":"SUV",
-    "Stationwagen":"Wagon",
-    "Coupé":"Coupe",
-    "Cabrio":"Convertible",
-    "Bedrijfswagen":"Van",
-    "Gesloten bestelwagen":"Van",
-    "Combi/Van":"Van",
-    "Koel/geisoleerde":"Van"
-})
-print("body type after mapping:")
+df = df.drop(columns=["FuelConsumption",'PreviousOwners',"APK"])
+print("\nshape after cleaning:", df.shape)
+# fix body types
+df["BodyType"] = df["BodyType"].replace({"SUV/Off-Road/Pick-Up":"SUV", "Stationwagen":"Wagon", 
+    "Coupé":"Coupe", "Cabrio":"Convertible", "Bedrijfswagen":"Van", 
+    "Gesloten bestelwagen":"Van", "Combi/Van":"Van", "Koel/geisoleerde":"Van"})
 print(df["BodyType"].value_counts())
-# EDA (exploratory data analysis)
-
-print("\nBody Type Distribution:")
-print(df["BodyType"].value_counts())
-
-# Visualization 
-plt.figure(figsize=(10, 6))
-sns.countplot(data=df, x="BodyType", hue="BodyType", palette="viridis", legend=False)
-plt.xticks(rotation=45, ha='right')
-plt.title("Body Type Distribution", fontsize=14, fontweight='bold')
-plt.xlabel("Body Type", fontsize=12)
-plt.ylabel("Count", fontsize=12)
-plt.tight_layout()
-plt.show()
-# insights:
-# hatchback and SUV having the long bar indicating that both body types are more comman as well showing the data is not balaance 
-# the cope convertible and overig having the small bars showing long tail classes in the data 
-# the data will make the model biased toward the more comman data type 
-
-#2)engine capicity vs Body type 
-median_engine_capacity_by_bodytype = df.groupby("BodyType")["EngineCapacity"].median()
-print("\nMedian Engine Capacity by Body Type:")
-print(median_engine_capacity_by_bodytype)
-#visualization
-sns.boxplot(data=df,x="BodyType",y="EngineCapacity") 
-plt.xticks(rotation=45,ha="right")
-plt.title("Engine Capacity vs Body Type",fontsize=14,fontweight="bold")
-plt.xlabel("Body Type",fontsize=12)
-plt.ylabel("Engine Capacity",fontsize=12)
-plt.tight_layout()
-plt.show()
-
-# insights 
-# hatchback and mpv and overig having the smaller engine 
-#suv and van and couple having the large engine capaicity
-# coupe and convertible  types show that they are powerful having the high engine outlieers 
-# median provide the robust comparison between the engine sizes 
-
-#3) power vs body type 
-max_power = df.groupby("BodyType")["PowerHP"].max()
-print("\nmax power by body type:")
-print(max_power)
-
-# visualization
-sns.stripplot(data=df,x="BodyType",y="PowerHP",jitter=True,alpha=0.5)
-plt.xticks(rotation=45,ha="right")
-plt.title("Power vs Body Type",fontsize=14,fontweight="bold")
-plt.xlabel("Body Type",fontsize=12)
-plt.ylabel("power distribution by body",fontsize=12)
-plt.tight_layout()
-plt.show()
-#insights 
-# different body type have the different power distribution
-# wagon ,convertible and couple having the high power car 
-# hatchback ,mpv and overig,van having the low power cars
-# suv having mid power cars
-
-#4) weight vs body type  
-normal_heavy_car=df.groupby("BodyType")["EmptyWeight"].quantile(0.75)
-print("\n75th percentile weight by body type:")
-print(normal_heavy_car)
-
-# vislualization
-sns.violinplot(data=df,x="BodyType",y="EmptyWeight")
+# eda
+plt.figure(figsize=(10,6))
+sns.countplot(data=df, x="BodyType", hue="BodyType", legend=False)
 plt.xticks(rotation=45)
-plt.title("weight vs bodytype",fontsize=14,fontweight="bold")
-plt.xlabel("body type",fontsize=12)
-plt.ylabel("weight distribution by body",fontsize=12)
+plt.title("Body Type Distribution")
+plt.show()
+# class imbalance - hatchback and suv have way more data 
+
+# engine capacity
+print(df.groupby("BodyType")["EngineCapacity"].median())
+sns.boxplot(data=df, x="BodyType", y="EngineCapacity") 
+plt.xticks(rotation=45)
+plt.title("Engine Capacity")
+plt.show() 
+
+# power
+sns.stripplot(data=df, x="BodyType", y="PowerHP", alpha=0.3)
+plt.xticks(rotation=45)
+plt.title("Power")
+plt.show()
+
+# weight
+sns.violinplot(data=df, x="BodyType", y="EmptyWeight")
+plt.xticks(rotation=45)
+plt.title("Weight")
+plt.show()
 plt.tight_layout()
 plt.show()
-# insights
-# the weight increase the body type 
-# while the hatchback having the lightst weight car 
-# while the vans are the heaviers
-# suv ,seden overrig occupy the higher weight cars
-# mpv wagon copes lie in the mid range 
+# vans heaviest, hatchbacks lightest 
 
-# 5)km vs body type
-median_km_by_bodytype = df.groupby("BodyType")["Km"].median()
-print("\nMedian Km by Body Type:")
-print(median_km_by_bodytype)
-# visulization
+# mileage
 sns.boxplot(data=df, x="BodyType", y="Km")
 plt.xticks(rotation=45)
-plt.title("Mileage vs Body Type")
+plt.title("Mileage")
 plt.show()
-# insights 
-# hatchback and sedans moderate mileage reflect daily uses
-# coupes and convertible have lower mileage suggest limitied or leisure use 
-# suv and van having higher mileage indicating heavy and commercial use
 
-#6) equipment embedding vs body type 
-df["Equipscore"]=df[["A1","A2","A3","A4"]].sum(axis=1)
-avg_equipscore_by_bodytype=df.groupby("BodyType")["Equipscore"].mean()
-print("\nAverage equipment score by Body Type:")
-print(avg_equipscore_by_bodytype)
-# visuaization
+# equipment features
+df["Equipscore"] = df["A1"] + df["A2"] + df["A3"] + df["A4"]
 sns.barplot(data=df, x="BodyType", y="Equipscore", errorbar=None)
 plt.xticks(rotation=45)
-plt.title("Average Equipment Score by Body Type")
+plt.title("Equipment Score")
 plt.show()
-# insights
-# suv highest equipment score showing they are more comfotable
-#hatchback and mpvs are moderately equipped
-# van lowest equipment reflect the commerical oritented design
 
-# MARKET SEGNMENT 
-# brand domination by body type 
-df.groupby(["BodyType","Brand"]).size() \
-  .sort_values(ascending=False) \
-  .groupby(level=0).head(2)
-# visualization
-top_brands = (
-    df.groupby(["BodyType","Brand"])
-      .size()
-      .reset_index(name="count")
-      .sort_values("count", ascending=False)
-      .groupby("BodyType")
-      .head(3)
-)
-
-sns.barplot(data=top_brands, y="Brand", x="count", hue="BodyType", errorbar=None)
-plt.title("Top Brands per Body Type")
+# top brands
+top_brands = df.groupby(["BodyType","Brand"]).size().reset_index(name="count").sort_values("count", ascending=False).groupby("BodyType").head(2)
+sns.barplot(data=top_brands, y="Brand", x="count", hue="BodyType")
+plt.title("Top Brands")
 plt.show()
-# insights 
-#volkswagon is most dominent brand overall
-# while luxury dominent sedan ,couple and convertible 
 
-# model dominent by body type 
-df.groupby(["BodyType","Model"]).size() \
-  .sort_values(ascending=False) \
-  .groupby(level=0).head(3)
- # visualization
-top_models = (
-    df.groupby(["BodyType","Model"])
-      .size()
-      .reset_index(name="count")
-      .sort_values("count", ascending=False)
-      .groupby("BodyType")
-      .head(3)
-)
-
-sns.barplot(data=top_models, y="Model", x="count", errorbar=None)
-plt.title("Top Models per Body Type")
+# top models
+top_models = df.groupby(["BodyType","Model"]).size().reset_index(name="count").sort_values("count", ascending=False).groupby("BodyType").head(2)
+sns.barplot(data=top_models, y="Model", x="count")
+plt.title("Top Models")
 plt.show()
-# INSIHTS
-# Model like polo 500 aygo have long bar showing widely used daily car
-# A5 appaer short because of luxuary model
-# kangoo and ductao are rare commmerical vehicales
-#the graph shows that everyday economy cars 
-# dominate the market, while luxury (A5) and commercial vehicles (Kangoo, Ducato)  appear far less frequently
 
-# YEAR TREND 
-df.groupby("YearBuilt").size()
-# visualization
+# year trend
 year_trend = df.groupby("YearBuilt").size().reset_index(name="count")
-
 sns.lineplot(data=year_trend, x="YearBuilt", y="count")
-plt.title("Car Listings Over Years")
+plt.title("Listings by Year")
 plt.show()
-# insights
-# the graph shows an upward trend in car listings from 2015 to 2018
-# this indicates a growing market for used cars over the past two decades
-# older cars are less available.
 
-# PREPROCESSING AFTER EDA
-# 1) filling the null values of numerical columns with the median 
+# preprocessing
+# filling missing values - using median for numerical
 numerical_col=["Cylinders","EmptyWeight","Gears","PowerHP","EngineCapacity","CO2Emission"]
 for col in numerical_col:
-# Fill with group median first, then global median for remaining NaNs
-    df[col] = df.groupby(["Brand","Model","YearBuilt"])[col] \
-                 .transform(lambda x: x.fillna(x.median()))
-# Fill any remaining NaNs with global median (for groups with all NaN values)
-    df[col] = df[col].fillna(df[col].median())
-# checking after filling the null values 
-print("\n null values after filling :",df.isnull().sum())
-#2) filling the categorical columns with mode(most occuring value)
+    df[col] = df.groupby(["Brand","Model","YearBuilt"])[col].transform(lambda x: x.fillna(x.median()))
+    df[col] = df[col].fillna(df[col].median())  
+print("\nnulls after filling:",df.isnull().sum())
+# categorical - use mode
 categorical_col=["FuelType","EmissionClass","Drive"]
 for col in categorical_col:
-    mode=df[col].mode()[0]
-    df[col]=df[col].fillna(mode)
-# checking after filling the categorical columns
-print("\n null values after filling the categorical columns :",df.isnull().sum())
+    df[col]=df[col].fillna(df[col].mode()[0])
+print("\nnulls after categorical:",df.isnull().sum())
 
-# FEATURE ENGINEERING 
-#1) power/weight ratio 
-df['Power_Weight_Ratio']=df["PowerHP"]/(df["EmptyWeight"]+1)
-#2) mileage log transform
-df["LogKm"]=np.log(df["Km"] + 1)
-#3) age of the car 
-df["CarAge"]=2018-df["YearBuilt"]
-print("\n Created engineered features: Power_Weight_Ratio, LogKm, CarAge")
-
-# dropping the irrelevant columns BEFORE split
+# new features
+df['PowerWeightRatio'] = df["PowerHP"] / (df["EmptyWeight"] + 1)
+df["LogKm"] = np.log(df["Km"] + 1)
+df["Age"] = 2018 - df["YearBuilt"]
 df = df.drop(columns=["Color"])
-print(" Dropped Color column")
+print("features created")
 
-# apply the one hot encoding onthe categorical columns 
-y=df["BodyType"]
-x=df.drop(columns=["BodyType"])
-low_cardinality=["Drive","Transmission","Category","EmissionClass","Warranty"]
-x=pd.get_dummies(x,columns=low_cardinality,drop_first=True)
-# checking the final features set
-print("\nFinal features set columns:",x.columns)
+# prepare for modeling
+y = df["BodyType"]
+X = df.drop(columns=["BodyType"])
 
-# apply the categorical_encoder on the high cardinality 
-import category_encoders as ce
+# one hot encoding
+low_card = ["Drive","Transmission","Category","EmissionClass","Warranty"]
+X = pd.get_dummies(X, columns=low_card, drop_first=True)
+print("features:", X.shape[1])
+
+# split data
 from sklearn.model_selection import train_test_split
-x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42,stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# target encoding for brand, model, fuel
+import category_encoders as ce
 encoder = ce.TargetEncoder(cols=["Brand","Model","FuelType"])
-x_train[["Brand","Model","FuelType"]]=encoder.fit_transform(x_train[["Brand","Model","FuelType"]],y_train)
-x_test[["Brand","Model","FuelType"]]=encoder.transform(x_test[["Brand","Model","FuelType"]])
-# checking the result after encoding 
-print(x_train[["Brand","Model","FuelType"]].head())
-print(x_train.dtypes.head(10))
-print("\nFinal features in training set:", x_train.shape[1])
+X_train[["Brand","Model","FuelType"]] = encoder.fit_transform(X_train[["Brand","Model","FuelType"]], y_train)
+X_test[["Brand","Model","FuelType"]] = encoder.transform(X_test[["Brand","Model","FuelType"]])
+print("encoded")
 
 # scaling the numerical columns with the enginerried features 
-numerical_col=["Km","YearBuilt","EmptyWeight","PowerHP","EngineCapacity","CO2Emission","Price","Equipscore","APKmonth","EngineCapacityCorr","Power_Weight_Ratio","LogKm","CarAge"]
+numerical_col=["Km","YearBuilt","EmptyWeight","PowerHP","EngineCapacity","CO2Emission","Price","Equipscore","APKmonth","EngineCapacityCorr","PowerWeightRatio","LogKm","Age"]
 from sklearn.preprocessing import StandardScaler
 scaler=StandardScaler()
-x_train[numerical_col]=scaler.fit_transform(x_train[numerical_col])
-x_test[numerical_col]=scaler.transform(x_test[numerical_col])
+X_train[numerical_col]=scaler.fit_transform(X_train[numerical_col])
+X_test[numerical_col]=scaler.transform(X_test[numerical_col])
 # checking after scaling
 print("\n Scaled features")
-print(x_train.head())
+print(X_train.head())
 
-# HANDLE CLASS IMBALANCE WITH SMOTE (limited sampling for faster training)
+# handle imbalance with smote
 from imblearn.over_sampling import SMOTE
 from collections import Counter
-print("\nHandling Class Imbalance ")
-print(f"Before SMOTE: {Counter(y_train)}")
-# Set target to balance minority classes up to 50000 samples
-class_counts = Counter(y_train)
-max_class_count = max(class_counts.values())
-target_count = min(max_class_count, 50000)
-sampling_strategy = {cls: target_count for cls, count in class_counts.items() if count < target_count}
-smote = SMOTE(random_state=42, k_neighbors=5, sampling_strategy=sampling_strategy)
-x_train, y_train = smote.fit_resample(x_train, y_train)
-print(f"After SMOTE: {Counter(y_train)}")
-print(f" Balanced training set: {x_train.shape[0]} samples")
+print("\nbefore:", Counter(y_train))
+smote = SMOTE(random_state=42)
+X_train, y_train = smote.fit_resample(X_train, y_train)
+print("after:", Counter(y_train))
+print(f" Balanced training set: {X_train.shape[0]} samples")
 
 # Modeling 
-#print("\n TRAINING MODELS ")
 #1) logistic regression 
-#print("Training Logistic Regression")
-#from sklearn.linear_model import LogisticRegression
-#lm=LogisticRegression(max_iter=2000,class_weight="balanced",random_state=42)
-#lm.fit(x_train,y_train)
-#print(" Logistic Regression trained")
+print("Training Logistic Regression")
+from sklearn.linear_model import LogisticRegression
+lr=LogisticRegression(max_iter=2000,class_weight="balanced",random_state=42)
+lr.fit(X_train,y_train)
+print(" Logistic Regression trained")
 
 #5) applying the second classifier random forest
 print("Training Random Forest")
 from sklearn.ensemble import RandomForestClassifier
-rc=RandomForestClassifier(n_estimators=100,random_state=42,n_jobs=-1,max_depth=20)
-rc.fit(x_train,y_train)
+rf=RandomForestClassifier(n_estimators=100,random_state=42,n_jobs=-1,max_depth=20)
+rf.fit(X_train,y_train)
 print(" Random Forest trained")
 
 
 
-#print(" Training Linear SVM...")
-#from sklearn.svm import SVC
-#svm=SVC(kernel="linear",class_weight="balanced",probability=True,random_state=42)
-#svm.fit(x_train,y_train)
-#print(" Linear SVM trained")
-#print("\n=== ALL MODELS TRAINED ===\n")
+print(" Training Linear SVM...")
+from sklearn.linear_model import SGDClassifier
+from sklearn.calibration import CalibratedClassifierCV
+# SGDClassifier is much faster than LinearSVC for large datasets
+# Using 50% sample for ultra-fast training
+sample_size = int(len(X_train) * 0.5)
+X_svm = X_train.sample(n=sample_size, random_state=42)
+y_svm = y_train[X_svm.index]
+# SGD with hinge loss = linear SVM, very fast
+svm_base = SGDClassifier(loss='hinge', class_weight='balanced', random_state=42, 
+                         max_iter=300, tol=1e-3, n_jobs=-1)
+svm = CalibratedClassifierCV(svm_base, cv=2)
+svm.fit(X_svm, y_svm)
+print(" Linear SVM trained")
+print("\n=== ALL MODELS TRAINED ===\n")
 
-# evaluation matrix 
-from sklearn.metrics import accuracy_score,precision_score,recall_score,f1_score,confusion_matrix,classification_report
-def evaluated_model(model,x_test,y_test,name):
-    y_pred=model.predict(x_test)
-    print(f"\n=={name}===")
-    print("accuracy:",accuracy_score(y_test,y_pred))
-    print("macrof1:",f1_score(y_test,y_pred,average="macro"))
-    print("precision:",precision_score(y_test,y_pred,average="weighted"))
-    print("recall:",recall_score(y_test,y_pred,average="weighted"))
-    print("\nClassification Report:\n", classification_report(y_test, y_pred))
+# evaluate
+from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
+
+def eval_model(model, X_test, y_test, name):
+    pred = model.predict(X_test)
+    print(f"\n{name}:")
+    print("accuracy:", accuracy_score(y_test, pred))
+    print("f1:", f1_score(y_test, pred, average="macro"))
+    print(classification_report(y_test, pred))
     
-    # Confusion Matrix
-    cm = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(6,4))
-    sns.heatmap(cm, annot=False, cmap="Blues")
-    plt.title(f"Confusion Matrix - {name}")
+eval_model(lr, X_test, y_test, "Logistic Regression")
+eval_model(rf, X_test, y_test, "Random Forest")
+eval_model(svm, X_test, y_test, "SVM")
+
+# cross validation
+from sklearn.model_selection import cross_val_score
+print("\ncv scores:")
+print("LR:", cross_val_score(lr, X_train, y_train, cv=5, scoring='f1_macro').mean())
+print("RF:", cross_val_score(rf, X_train, y_train, cv=5, scoring='f1_macro').mean())
+
+# feature importance
+importances = pd.DataFrame({'feature': X_train.columns, 'importance': rf.feature_importances_}).sort_values('importance', ascending=False)
+print("\ntop features:")
+print(importances.head(10))
+importances.to_csv('feature_importance.csv', index=False)
+
+# check minority classes
+minority = y.value_counts()[y.value_counts() < y.value_counts().median()].index
+print("\nminority classes:", list(minority))
+
+# temporal analysis
+test_df = X_test.copy()
+test_df['actual'] = y_test.values
+test_df['pred'] = rf.predict(X_test)
+test_df['year'] = df.loc[y_test.index, 'YearBuilt'].values
+
+year_acc = test_df.groupby('year').apply(lambda x: accuracy_score(x['actual'], x['pred']))
+print("\naccuracy by year:")
+print(year_acc.tail())
+
+print("\nall done!")
+print("="*80)
+
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+
+# Use original data before SMOTE for CV (to avoid data leakage)
+# Recreate the split
+X_train_orig, X_test_orig, y_train_orig, y_test_orig = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# Re-encode and scale for CV
+encoder_cv = ce.TargetEncoder(cols=["Brand","Model","FuelType"])
+X_train_cv = X_train_orig.copy()
+X_train_cv[["Brand","Model","FuelType"]] = encoder_cv.fit_transform(
+    X_train_cv[["Brand","Model","FuelType"]], y_train_orig
+)
+
+scaler_cv = StandardScaler()
+X_train_cv[numerical_col] = scaler_cv.fit_transform(X_train_cv[numerical_col])
+
+# 5-Fold Stratified Cross-Validation
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+from sklearn.svm import LinearSVC
+models_cv = {
+    'Logistic Regression': LogisticRegression(max_iter=2000, class_weight="balanced", random_state=42),
+    'Random Forest': RandomForestClassifier(n_estimators=100, max_depth=20, random_state=42, n_jobs=-1),
+    'Linear SVM': LinearSVC(class_weight="balanced", random_state=42, max_iter=2000)
+}
+
+cv_results = {}
+for name, model in models_cv.items():
+    print(f"\nPerforming 5-Fold CV for {name}...")
+    scores = cross_val_score(model, X_train_cv, y_train_orig, cv=cv, 
+                             scoring='f1_macro', n_jobs=-1)
+    cv_results[name] = {
+        'mean': scores.mean(),
+        'std': scores.std(),
+        'scores': scores
+    }
+    print(f"  Macro F1 Scores: {scores}")
+    print(f"  Mean: {scores.mean():.4f} (+/- {scores.std():.4f})")
+
+# Save CV results
+cv_df = pd.DataFrame({
+    'Model': list(cv_results.keys()),
+    'Mean_F1': [cv_results[m]['mean'] for m in cv_results],
+    'Std_F1': [cv_results[m]['std'] for m in cv_results]
+})
+cv_df = cv_df.sort_values('Mean_F1', ascending=False)
+print("\n" + "="*80)
+print("CROSS-VALIDATION SUMMARY")
+print("="*80)
+print(cv_df.to_string(index=False))
+
+# Visualization
+plt.figure(figsize=(10, 6))
+plt.barh(cv_df['Model'], cv_df['Mean_F1'], xerr=cv_df['Std_F1'], 
+         capsize=5, alpha=0.7, color='steelblue')
+plt.xlabel('Macro F1 Score', fontsize=12)
+plt.title('Cross-Validation Results (5-Fold)', fontsize=14, fontweight='bold')
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.savefig('cv_results.png', dpi=150, bbox_inches='tight')
+plt.show()
+print(" Saved: cv_results.png")
+
+
+# MINORITY CLASS ANALYSIS
+
+print("\n" + "="*80)
+print("MINORITY CLASS PERFORMANCE ANALYSIS")
+print("="*80)
+
+# Identify minority classes 
+class_distribution = y_test.value_counts()
+total_samples = len(y_test)
+minority_threshold = 0.10
+minority_classes = class_distribution[class_distribution / total_samples < minority_threshold].index.tolist()
+
+print(f"\nMinority classes (< {minority_threshold*100}% of data): {minority_classes}")
+print(f"Class distribution in test set:")
+print(class_distribution)
+
+# Detailed per-class metrics for all models
+from sklearn.metrics import precision_recall_fscore_support
+
+minority_results = []
+for model_name, model in [('Logistic Regression', lr), 
+                          ('Random Forest', rf), 
+                          ('Linear SVM', svm)]:
+    y_pred = model.predict(X_test)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_test, y_pred, labels=minority_classes, average=None, zero_division=0
+    )
+    
+    for i, cls in enumerate(minority_classes):
+        minority_results.append({
+            'Model': model_name,
+            'Class': cls,
+            'Precision': precision[i],
+            'Recall': recall[i],
+            'F1-Score': f1[i],
+            'Support': support[i]
+        })
+
+minority_df = pd.DataFrame(minority_results)
+print("\n" + "="*80)
+print("MINORITY CLASS DETAILED METRICS")
+print("="*80)
+print(minority_df.to_string(index=False))
+
+# Save minority class results
+minority_df.to_csv('minority_class_performance.csv', index=False)
+print("\n Saved: minority_class_performance.csv")
+
+# Visualization
+plt.figure(figsize=(12, 6))
+for metric in ['Precision', 'Recall', 'F1-Score']:
+    plt.figure(figsize=(10, 6))
+    pivot = minority_df.pivot(index='Class', columns='Model', values=metric)
+    pivot.plot(kind='bar', width=0.8)
+    plt.title(f'{metric} for Minority Classes', fontsize=14, fontweight='bold')
+    plt.ylabel(metric, fontsize=12)
+    plt.xlabel('Body Type', fontsize=12)
+    plt.legend(title='Model')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(f'minority_{metric.lower().replace("-", "_")}.png', dpi=150, bbox_inches='tight')
     plt.show()
-    # evaluation 
-print(" EVALUATING MODELS ")
-#evaluated_model(lm,  x_test, y_test, "Logistic Regression (Baseline)")
-evaluated_model(rc,  x_test, y_test, "Random Forest")
-#evaluated_model(svm, x_test, y_test, "Linear SVM")
-#print("\n ALL EVALUATIONS COMPLETE!")
+    print(f" Saved: minority_{metric.lower().replace('-', '_')}.png")
+
+
+# FEATURE IMPORTANCE ANALYSIS
+
+print("\n" + "="*80)
+print("FEATURE IMPORTANCE ANALYSIS")
+print("="*80)
+
+# Random Forest Feature Importance
+feature_importance = pd.DataFrame({
+    'Feature': X_train.columns,
+    'Importance': rf.feature_importances_
+}).sort_values('Importance', ascending=False)
+
+print("\nTop 20 Most Important Features (Random Forest):")
+print(feature_importance.head(20).to_string(index=False))
+
+# Save feature importance
+feature_importance.to_csv('feature_importance.csv', index=False)
+print("\n Saved: feature_importance.csv")
+
+# Visualization
+plt.figure(figsize=(10, 8))
+top_features = feature_importance.head(20)
+plt.barh(range(len(top_features)), top_features['Importance'], color='coral', alpha=0.8)
+plt.yticks(range(len(top_features)), top_features['Feature'])
+plt.xlabel('Importance Score', fontsize=12)
+plt.title('Top 20 Feature Importances (Random Forest)', fontsize=14, fontweight='bold')
+plt.gca().invert_yaxis()
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.savefig('feature_importance.png', dpi=150, bbox_inches='tight')
+plt.show()
+print(" Saved: feature_importance.png")
+
+# SHAP ANALYSIS FOR MODEL INTERPRETABIL
+print("\n" + "="*80)
+print("SHAP ANALYSIS - MODEL INTERPRETABILITY")
+print("="*80)
+
+try:
+    import shap
+    print("\nCalculating SHAP values for Random Forest (this may take a few minutes)...")
     
+    # Use a sample for SHAP to speed up computation
+    sample_size = min(500, len(X_test))
+    X_test_sample = X_test.sample(n=sample_size, random_state=42)
     
+    # Create SHAP explainer
+    explainer = shap.TreeExplainer(rf)
+    shap_values = explainer.shap_values(X_test_sample)
+    
+    # Get class names
+    class_names = rf.classes_
+    
+    # Summary plot for first class (or dominant class)
+    plt.figure(figsize=(10, 8))
+    shap.summary_plot(shap_values[0], X_test_sample, plot_type="bar", 
+                      show=False, max_display=20)
+    plt.title(f'SHAP Feature Importance - {class_names[0]}', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('shap_summary.png', dpi=150, bbox_inches='tight')
+    plt.show()
+    print(" Saved: shap_summary.png")
+    
+    # Detailed SHAP summary plot
+    plt.figure(figsize=(10, 8))
+    shap.summary_plot(shap_values[0], X_test_sample, show=False, max_display=20)
+    plt.title(f'SHAP Value Distribution - {class_names[0]}', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('shap_detailed.png', dpi=150, bbox_inches='tight')
+    plt.show()
+    print(" Saved: shap_detailed.png")
+    
+    print("\n SHAP analysis complete!")
+except Exception as e:
+    print(f"SHAP analysis skipped: {e}")
+
+# ROBUSTNESS: PERFORMANCE BY MODEL YEAR (TEMPORAL ANALYSIS)
+print("\n" + "="*80)
+print("TEMPORAL ANALYSIS - PERFORMANCE BY MODEL YEAR")
+print("="*80)
+
+# Group years into decades/periods
+def year_to_period(year):
+    if year < 2000:
+        return "Pre-2000"
+    elif year < 2005:
+        return "2000-2004"
+    elif year < 2010:
+        return "2005-2009"
+    elif year < 2015:
+        return "2010-2014"
+    else:
+        return "2015+"
+
+# Add period to test data
+X_test_with_year = X_test.copy()
+X_test_with_year['Period'] = df.loc[X_test.index, 'YearBuilt'].apply(year_to_period)
+y_test_with_period = y_test.copy()
+
+# Analyze performance by period
+temporal_results = []
+for period in ["Pre-2000", "2000-2004", "2005-2009", "2010-2014", "2015+"]:
+    period_mask = X_test_with_year['Period'] == period
+    if period_mask.sum() == 0:
+        continue
+    
+    X_period = X_test[period_mask]
+    y_period = y_test_with_period[period_mask]
+    
+    for model_name, model in [('Logistic Regression', lr), 
+                              ('Random Forest', rf), 
+                              ('Linear SVM', svm)]:
+        y_pred = model.predict(X_period)
+        macro_f1 = f1_score(y_period, y_pred, average='macro')
+        accuracy = accuracy_score(y_period, y_pred)
+        
+        temporal_results.append({
+            'Period': period,
+            'Model': model_name,
+            'Macro_F1': macro_f1,
+            'Accuracy': accuracy,
+            'Sample_Size': len(y_period)
+        })
+
+temporal_df = pd.DataFrame(temporal_results)
+print("\n" + "="*80)
+print("PERFORMANCE BY TIME PERIOD")
+print("="*80)
+print(temporal_df.to_string(index=False))
+
+# Save temporal results
+temporal_df.to_csv('temporal_performance.csv', index=False)
+print("\n Saved: temporal_performance.csv")
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+# Macro F1 by period
+pivot_f1 = temporal_df.pivot(index='Period', columns='Model', values='Macro_F1')
+pivot_f1.plot(kind='bar', ax=axes[0], width=0.8)
+axes[0].set_title('Macro F1 Score by Time Period', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Macro F1', fontsize=12)
+axes[0].set_xlabel('Time Period', fontsize=12)
+axes[0].legend(title='Model')
+axes[0].grid(axis='y', alpha=0.3)
+axes[0].tick_params(axis='x', rotation=45)
+
+# Accuracy by period
+pivot_acc = temporal_df.pivot(index='Period', columns='Model', values='Accuracy')
+pivot_acc.plot(kind='bar', ax=axes[1], width=0.8)
+axes[1].set_title('Accuracy by Time Period', fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Accuracy', fontsize=12)
+axes[1].set_xlabel('Time Period', fontsize=12)
+axes[1].legend(title='Model')
+axes[1].grid(axis='y', alpha=0.3)
+axes[1].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+plt.savefig('temporal_performance.png', dpi=150, bbox_inches='tight')
+plt.show()
+print(" Saved: temporal_performance.png")
+
+
+# ROBUSTNESS: PERFORMANCE BY BRAND SEGMENT
+
+print("\n" + "="*80)
+print("BRAND SEGMENT ANALYSIS")
+print("="*80)
+
+# Define brand segments
+luxury_brands = ['Mercedes-Benz', 'BMW', 'Audi', 'Porsche', 'Jaguar', 'Lexus', 
+                 'Volvo', 'Land Rover', 'Maserati', 'Bentley']
+economy_brands = ['Volkswagen', 'Ford', 'Opel', 'Renault', 'Peugeot', 'Citroën', 
+                  'Toyota', 'Hyundai', 'Kia', 'Skoda', 'Seat', 'Fiat', 'Suzuki']
+
+def brand_to_segment(brand):
+    if brand in luxury_brands:
+        return "Luxury"
+    elif brand in economy_brands:
+        return "Economy"
+    else:
+        return "Mid-Range"
+
+# Add segment to test data
+X_test_with_brand = X_test.copy()
+original_brands = df.loc[X_test.index, 'Brand']
+X_test_with_brand['Segment'] = original_brands.apply(brand_to_segment)
+
+# Analyze performance by brand segment
+segment_results = []
+for segment in ["Luxury", "Economy", "Mid-Range"]:
+    segment_mask = X_test_with_brand['Segment'] == segment
+    if segment_mask.sum() == 0:
+        continue
+    
+    X_segment = X_test[segment_mask]
+    y_segment = y_test[segment_mask]
+    
+    for model_name, model in [('Logistic Regression', lr), 
+                              ('Random Forest', rf), 
+                              ('Linear SVM', svm)]:
+        y_pred = model.predict(X_segment)
+        macro_f1 = f1_score(y_segment, y_pred, average='macro')
+        accuracy = accuracy_score(y_segment, y_pred)
+        
+        segment_results.append({
+            'Segment': segment,
+            'Model': model_name,
+            'Macro_F1': macro_f1,
+            'Accuracy': accuracy,
+            'Sample_Size': len(y_segment)
+        })
+
+segment_df = pd.DataFrame(segment_results)
+print("\n" + "="*80)
+print("PERFORMANCE BY BRAND SEGMENT")
+print("="*80)
+print(segment_df.to_string(index=False))
+
+# Save segment results
+segment_df.to_csv('segment_performance.csv', index=False)
+print("\n Saved: segment_performance.csv")
+
+# Visualization
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+# Macro F1 by segment
+pivot_f1_seg = segment_df.pivot(index='Segment', columns='Model', values='Macro_F1')
+pivot_f1_seg.plot(kind='bar', ax=axes[0], width=0.8, color=['steelblue', 'coral', 'lightgreen'])
+axes[0].set_title('Macro F1 Score by Brand Segment', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Macro F1', fontsize=12)
+axes[0].set_xlabel('Brand Segment', fontsize=12)
+axes[0].legend(title='Model')
+axes[0].grid(axis='y', alpha=0.3)
+axes[0].tick_params(axis='x', rotation=0)
+
+# Accuracy by segment
+pivot_acc_seg = segment_df.pivot(index='Segment', columns='Model', values='Accuracy')
+pivot_acc_seg.plot(kind='bar', ax=axes[1], width=0.8, color=['steelblue', 'coral', 'lightgreen'])
+axes[1].set_title('Accuracy by Brand Segment', fontsize=14, fontweight='bold')
+axes[1].set_ylabel('Accuracy', fontsize=12)
+axes[1].set_xlabel('Brand Segment', fontsize=12)
+axes[1].legend(title='Model')
+axes[1].grid(axis='y', alpha=0.3)
+axes[1].tick_params(axis='x', rotation=0)
+
+plt.tight_layout()
+plt.savefig('segment_performance.png', dpi=150, bbox_inches='tight')
+plt.show()
+print(" Saved: segment_performance.png")
